@@ -1,10 +1,14 @@
 const newGameButton = document.querySelector('.js-new-game-button');
 const playerCardsContainer = document.querySelector('.js-player-cards-container');
+const chipCountContainer = document.querySelector('.js-chip-count-container');
+const potContainer = document.querySelector('.js-pot-container');
 
-playerCardsContainer.innerHTML = 'ide jönnek majd a lapok';
 
 let deckId = null;
 let playerCards = [];
+let playerChips = 100;
+let computerChips = 100;
+let pot=0; //kassza
 
 function renderPlayerCards(){
     let html='';
@@ -16,13 +20,29 @@ function renderPlayerCards(){
     playerCardsContainer.innerHTML=html;
 }
 
+function renderChips() {
+    chipCountContainer.innerHTML =`
+        <div class="chip-count">Player chips: ${playerChips}</div>
+        <div class="chip-count">Computer chips: ${computerChips}</div>`;}
+
+function renderPot(){
+    potContainer.innerHTML = `
+        <div class="chip-count">Pot: ${pot}</div>`;
+}
+
+function render(){
+    renderPlayerCards();
+    renderChips();
+    renderPot();
+}
+
 function drawAndRenderPlayerCards(){
     if (deckId== null)return;
     fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
         .then(data => data.json())
         .then(function(response){
             playerCards = response.cards;
-            renderPlayerCards();
+            render();
         });
 }
 
@@ -36,3 +56,4 @@ function startGame() {
 }
 
 newGameButton.addEventListener('click', startGame);
+render();
