@@ -3,7 +3,7 @@ body {
     color:whitesmoke;
 }
 
-
+.invisible {display: none;}
 
 
 .button-15 {
@@ -51,4 +51,8 @@ body {
 .button-15:focus {
   box-shadow: rgba(131, 192, 253, 0.5) 0 0 0 3px;
   outline: none;
+}
+
+.bet-slider {
+    width: 65vw;
 }
