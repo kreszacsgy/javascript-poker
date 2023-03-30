@@ -5,7 +5,7 @@ const potContainer = document.querySelector('.js-pot-container');
 const betArea = document.querySelector('.js-bet-area');
 const betSlider = document.querySelector('#bet-amount');
 const betSliderValue = document.querySelector ('.js-slider-value');
-
+const betButton = document.querySelector ('.js-bet-button');
 
 
 let {
@@ -81,6 +81,7 @@ function drawAndRenderPlayerCards(){
 }
 
 function startGame() {
+    initialize();
     fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1')
         .then(data => data.json())
         .then(function(response){
@@ -89,9 +90,17 @@ function startGame() {
         });
 }
 
+function bet(){
+    const betValue=Number(betSlider.value);
+    pot+= betValue;
+    playerChips-=betValue;
+    render();
+}
+
 
 
 newGameButton.addEventListener('click', startGame);
 betSlider.addEventListener('change', render);
+betButton.addEventListener('click', bet);
 initialize();
 render();
