@@ -9,11 +9,13 @@ const betButton = document.querySelector ('.js-bet-button');
 
 
 let {
-    deckId,
-    playerCards,
-    playerChips,
-    computerChips,
-    pot
+    deckId,             
+    playerCards,        //játékos lapjai
+    computerCards,      //számítógáp lapjai
+    playerChips,        //játékos zsetonjai
+    computerChips,      //gép zsetonjai
+    playerBetPlaced,    //játékos már licitált
+    pot                 //kassza
 } = getInitialState();
 
 function getInitialState(){
@@ -22,15 +24,16 @@ function getInitialState(){
         playerCards : [],
         playerChips : 100,
         computerChips : 100,
+        playerBetPlaced:false,
         pot : 0
     }
 }
 
 function initialize (){({
-    deckId,playerCards, playerChips = 100, computerChips = 100, pot} = getInitialState());}
+    deckId,playerCards, playerChips, computerChips, playerBetPlaced, pot} = getInitialState());}
 
 function canBet(){
-    return playerCards.length === 2 && playerChips > 0 && pot === 0;
+    return playerCards.length === 2 && playerChips > 0 && playerBetPlaced === false;
 }
 
 function renderSlider () {
@@ -101,11 +104,38 @@ function startGame() {
     startHand();
     }
 
+function shouldComputerCall(){
+    if (computerCards.length !=2) return false;
+    const card1Code= computerCards[0].code;
+    const card2Code= computerCards[1].code;
+    const card1Value=card1Code[0];
+    const card2Value=card2Code[0];
+    const card1Suit=card1Code[1];
+    const card2Suit=card2Code[1];
+    return card1Value == card2Value ||
+           ['0','J','K','Q','A'].includes(card1Value)||
+           ['0','J','K','Q','A'].includes(card2Value)||
+           (card1Suit==card2Suit && Math.abs(Number(card1Value)-Number(card2Value))<=2);
+}
+
+function computerMoveAfterBet(){
+    if (deckId== null)return;
+    fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
+        .then(data => data.json())
+        .then(function(response){
+            computerCards = response.cards;
+            alert(shouldComputerCall()? 'Call' : 'Fold');
+            //render();
+        });
+}
+
 function bet(){
     const betValue=Number(betSlider.value);
     pot+= betValue;
     playerChips-=betValue;
+    playerBetPlaced=true;
     render();
+    computerMoveAfterBet();
 }
 
 
