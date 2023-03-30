@@ -80,15 +80,26 @@ function drawAndRenderPlayerCards(){
         });
 }
 
-function startGame() {
-    initialize();
+function postBlinds(){
+    playerChips-=1;
+    computerChips-=2;
+    pot+=3;
+    render();
+}
+
+function startHand(){
+    postBlinds(); //vaktétek adminisztrálása
     fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1')
         .then(data => data.json())
         .then(function(response){
             deckId=response.deck_id;
-            drawAndRenderPlayerCards();
-        });
+            drawAndRenderPlayerCards();})
 }
+
+function startGame() {
+    initialize();
+    startHand();
+    }
 
 function bet(){
     const betValue=Number(betSlider.value);
