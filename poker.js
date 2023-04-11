@@ -18,7 +18,9 @@ let {
     computerCards,      //számítógáp lapjai
     computerAction,     //játékos cselekedete (call, fold)
     playerChips,        //játékos zsetonjai
+    playerBets,         //játékos licitje ebben a körben
     computerChips,      //gép zsetonjai
+    computerBets,       // gép licitje ebben a körben
     playerBetPlaced,    //játékos már licitált
     pot                 //kassza
 } = getInitialState();
@@ -30,7 +32,9 @@ function getInitialState(){
         computerCards:[],
         computerAction: null,
         playerChips : 100,
+        playerBets: 0,
         computerChips : 100,
+        computerBets:0,
         playerBetPlaced:false,
         pot : 0
     }
@@ -43,7 +47,9 @@ function initialize (){
         computerCards,
         computerAction,
         playerChips,
+        playerBets,
         computerChips,
+        computerBets,
         playerBetPlaced,
         pot} = getInitialState());}
 
@@ -113,7 +119,9 @@ function drawAndRenderPlayerCards(){
 
 function postBlinds(){
     playerChips-=1;
+    playerBets+=1;
     computerChips-=2;
+    computerBets+=2;
     pot+=3;
     render();
 }
@@ -151,9 +159,16 @@ function computerMoveAfterBet(){
     fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
         .then(data => data.json())
         .then(function(response){
-            if(shouldComputerCall(response.cards)){
+            if(pot===4){
+                computerAction='Check';
+                computerCards = response.cards;
+            }else if(shouldComputerCall(response.cards)){
                 computerAction='Call';
                 computerCards = response.cards;
+                const difference=playerBets-computerBets;
+                computerChips -= difference;
+                computerBets += difference;
+                pot+=difference;
             } else {
                 computerAction='Fold';
             }
@@ -166,6 +181,7 @@ function bet(){
     pot+= betValue;
     playerChips-=betValue;
     playerBetPlaced=true;
+    playerBets+=betValue;
     render();
     computerMoveAfterBet();
 }
