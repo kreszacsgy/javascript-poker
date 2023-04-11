@@ -9,13 +9,14 @@ const playerChipContainer = document.querySelector('.js-player-chip-container');
 const computerCardsContainer = document.querySelector('.js-computer-cards-container');
 const computerChipContainer = document.querySelector('.js-computer-chip-container');
 const computerActionContainer= document.querySelector('.js-computer-action');
-
+const communityCardsContainer= document.querySelector('.js-community-cards');
 
 
 let {
     deckId,             
     playerCards,        //játékos lapjai
     computerCards,      //számítógáp lapjai
+    communityCards,     //közös lapok
     computerAction,     //játékos cselekedete (call, fold)
     playerChips,        //játékos zsetonjai
     playerBets,         //játékos licitje ebben a körben
@@ -30,6 +31,7 @@ function getInitialState(){
         deckId : null,
         playerCards : [],
         computerCards:[],
+        communityCards: [],
         computerAction: null,
         playerChips : 100,
         playerBets: 0,
@@ -45,6 +47,7 @@ function initialize (){
         deckId,
         playerCards,
         computerCards,
+        communityCards,
         computerAction,
         playerChips,
         playerBets,
@@ -80,6 +83,7 @@ function renderCardsInContainer(cards, container){
 function renderAllCards(){
     renderCardsInContainer(playerCards, playerCardsContainer);
     renderCardsInContainer(computerCards, computerCardsContainer);
+    renderCardsInContainer(communityCards,communityCardsContainer);
 }
 
 
@@ -138,10 +142,25 @@ function startHand(){
 function startGame() {
     initialize();
     startHand();
-    }
+}
 
-    function endHand(){
+function endHand(winner=null){
         setTimeout(()=> {
+            if (computerAction === 'Fold'){
+                //TODO:felsorolt típus kell az akcióknak
+                playerChips+= pot;
+                pot=0;
+            } else  if (winner=== 'Player'){
+                playerChips+= pot;
+                pot=0;
+            }else if (winner ==='Computer'){
+                computerChips+=pot;
+                pot=0;
+            } else if(winner ==='Draw'){
+                playerChips+=playerBets;
+                computerChips+=computerBets;
+                pot=0;
+            }
             deckId=null;
             playerBets= 0;
             computerBets=0;
@@ -149,15 +168,10 @@ function startGame() {
             computerCards=[];
             computerAction=null;
             playerBetPlaced=false;
-            if (computerAction === 'Fold'){
-                //TODO:felsorolt típus kell az akcióknak
-                playerChips+= pot;
-                pot=0;
-            }
             render();
 
         },2000);
-    }
+}
 
 function shouldComputerCall(computerCards){
     if (computerCards.length !=2) return false;
@@ -173,26 +187,69 @@ function shouldComputerCall(computerCards){
            (card1Suit==card2Suit && Math.abs(Number(card1Value)-Number(card2Value))<=2);
 }
 
+const SHOWDOWN_API_PREFIX = "https://api.pokerapi.dev/v1/winner/texas_holdem?";
+function cardsToString(cards){
+    return cards.map(x=> x.code[0]==='0'? '1'+canBet.code:x.code).toString();
+}
+async function getWinner(){
+    const cc = cardsToString(communityCards);
+    const pc0 = cardsToString(playerCards);
+    const pc1 = cardsToString(computerCards);
+    const data = await fetch (`${SHOWDOWN_API_PREFIX};cc=${cc}&pc[]=${pc0}&pc[]=${pc1}`);
+    const response = await data.json();
+    const winners = response.winners;
+    if( winners.length === 2){
+        return 'Draw'; // TODO: felsorolt típus
+    } else if (winners [0].cards === pc0){
+        return 'Player';
+    } else{
+        return 'Computer';
+    }
+}
+
+async function showdown (){
+    const data = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=5`);
+    const response = await data.json();
+    communityCards = response.cards;
+    render();
+    const winner= await getWinner();
+    return winner;
+}
+
 function computerMoveAfterBet(){
     if (deckId== null)return;
     fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
         .then(data => data.json())
-        .then(function(response){
-            if(pot===4){
-                computerAction='Check';
-                computerCards = response.cards;
-            }else if(shouldComputerCall(response.cards)){
+        .then(async function(response){
+            if(pot === 4){
+                computerAction ='Check';
+            }
+            else if (shouldComputerCall(response.cards)) {
+                computerAction ='Call';
+            }
+            else {
+                computerAction = 'Fold';
+            }
+            if(computerAction = 'Call'){
                 computerAction='Call';
                 computerCards = response.cards;
                 const difference=playerBets-computerBets;
                 computerChips -= difference;
                 computerBets += difference;
                 pot+=difference;
-            } else {
-                computerAction='Fold';
             }
-            render();
-            endHand();
+
+            if(computerAction === 'Check' || computerAction == 'Call'){
+                computerCards = response.cards;
+                render();
+                const winner= await showdown();
+                console.log(winner);
+               endHand(winner);
+            } else {
+                render();
+                endHand();
+            }
+            
         });
 }
 
