@@ -32,6 +32,7 @@ let {
     pot                 //kassza
 } = getInitialState();
 
+
 function getInitialState(){
     return {
         deckId : null,
@@ -60,7 +61,12 @@ function initialize (){
         computerChips,
         computerBets,
         playerBetPlaced,
-        pot} = getInitialState());}
+        pot} = getInitialState());
+        // A bet slider állapota csak a DOM-ban van rögzítve Hozzuk alapértelmezésbe.
+        betSlider.value = 1;
+        // Feltételezzük, hogy később az alapértelmezett értékeket máshol renderelni fogjuk,
+        //ezért a slider értékét itt nem kell renderelni
+    }
 
 function canBet(){
     return playerCards.length === 2 && playerChips > 0 && playerBetPlaced === false;
