@@ -117,14 +117,12 @@ function render(){
     renderAction();
 }
 
-function drawAndRenderPlayerCards(){
+async function drawAndRenderPlayerCards(){
     if (deckId== null)return;
-    fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
-        .then(data => data.json())
-        .then(function(response){
-            playerCards = response.cards;
-            render();
-        });
+    const data = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
+    const response = await data.json();
+    playerCards = response.cards;
+    render();
 }
 
 function postBlinds(){
@@ -136,13 +134,12 @@ function postBlinds(){
     render();
 }
 
-function startHand(){
+async function startHand(){
     postBlinds(); //vaktétek adminisztrálása
-    fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1')
-        .then(data => data.json())
-        .then(function(response){
-            deckId=response.deck_id;
-            drawAndRenderPlayerCards();})
+    const data = await fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1');
+    const response= await data.json();
+    deckId=response.deck_id;
+    drawAndRenderPlayerCards();
 }
 
 function startGame() {
@@ -222,40 +219,37 @@ async function showdown (){
     return winner;
 }
 
-function computerMoveAfterBet(){
-    if (deckId== null)return;
-    fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
-        .then(data => data.json())
-        .then(async function(response){
-            if(pot === 4){
-                computerAction ='Check';
-            }
-            else if (shouldComputerCall(response.cards)) {
-                computerAction ='Call';
-            }
-            else {
-                computerAction = 'Fold';
-            }
-            if(computerAction = 'Call'){
-                computerAction='Call';
-                computerCards = response.cards;
-                const difference=playerBets-computerBets;
-                computerChips -= difference;
-                computerBets += difference;
-                pot+=difference;
-            }
+async function computerMoveAfterBet(){
+    const data = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
+    const response = await data.json();
+    if(pot === 4){
+        computerAction ='Check';
+    }
+    else if (shouldComputerCall(response.cards)) {
+        computerAction ='Call';
+    }
+    else {
+        computerAction = 'Fold';
+    }
+    if(computerAction = 'Call'){
+        computerAction='Call';
+        computerCards = response.cards;
+        const difference=playerBets-computerBets;
+        computerChips -= difference;
+        computerBets += difference;
+        pot+=difference;
+    }
 
-            if(computerAction === 'Check' || computerAction == 'Call'){
-                computerCards = response.cards;
-                render();
-                const winner= await showdown();
-               endHand(winner);
-            } else {
-                render();
-                endHand();
-            }
-            
-        });
+    if(computerAction === 'Check' || computerAction == 'Call'){
+        computerCards = response.cards;
+        render();
+        const winner= await showdown();
+       endHand(winner);
+    } else {
+        render();
+        endHand();
+    }
+   
 }
 
 function bet(){
