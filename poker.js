@@ -1,11 +1,17 @@
 const newGameButton = document.querySelector('.js-new-game-button');
 const potContainer = document.querySelector('.js-pot-container');
+
+const playerCardsContainer = document.querySelector('.js-player-cards-container');
+const playerChipContainer = document.querySelector('.js-player-chip-container');
 const betArea = document.querySelector('.js-bet-area');
 const betSlider = document.querySelector('#bet-amount');
 const betSliderValue = document.querySelector ('.js-slider-value');
 const betButton = document.querySelector ('.js-bet-button');
-const playerCardsContainer = document.querySelector('.js-player-cards-container');
-const playerChipContainer = document.querySelector('.js-player-chip-container');
+
+const betPotButton = document.querySelector(".js-betpot");
+const bet25Button = document.querySelector(".js-bet25");
+const bet50Button = document.querySelector(".js-bet50");
+
 const computerCardsContainer = document.querySelector('.js-computer-cards-container');
 const computerChipContainer = document.querySelector('.js-computer-chip-container');
 const computerActionContainer= document.querySelector('.js-computer-action');
@@ -74,7 +80,7 @@ function renderCardsInContainer(cards, container){
     let html='';
 
     for(let card of cards){
-        html += `<img src="${card.image}" alt="${card.code}" />`;
+        html += `<img src="${card.image}" alt="${card.code}" class="card-image"/>`;
     }
 
     container.innerHTML=html;
@@ -187,15 +193,15 @@ function shouldComputerCall(computerCards){
            (card1Suit==card2Suit && Math.abs(Number(card1Value)-Number(card2Value))<=2);
 }
 
-const SHOWDOWN_API_PREFIX = "https://api.pokerapi.dev/v1/winner/texas_holdem?";
+const SHOWDOWN_API_PREFIX = "https://api.pokerapi.dev/v1/winner/texas_holdem";
 function cardsToString(cards){
-    return cards.map(x=> x.code[0]==='0'? '1'+canBet.code:x.code).toString();
+    return cards.map(x=> x.code[0]==='0'?'1'+ x.code:x.code).toString();
 }
 async function getWinner(){
     const cc = cardsToString(communityCards);
     const pc0 = cardsToString(playerCards);
     const pc1 = cardsToString(computerCards);
-    const data = await fetch (`${SHOWDOWN_API_PREFIX};cc=${cc}&pc[]=${pc0}&pc[]=${pc1}`);
+    const data = await fetch (`${SHOWDOWN_API_PREFIX}?cc=${cc}&pc[]=${pc0}&pc[]=${pc1}`);
     const response = await data.json();
     const winners = response.winners;
     if( winners.length === 2){
@@ -243,7 +249,6 @@ function computerMoveAfterBet(){
                 computerCards = response.cards;
                 render();
                 const winner= await showdown();
-                console.log(winner);
                endHand(winner);
             } else {
                 render();
@@ -263,10 +268,31 @@ function bet(){
     computerMoveAfterBet();
 }
 
+function getPlayerPotBet(){
+    let difference = computerBets - playerBets;
+    return Math.min(playerChips, pot + 2*difference);
+}
+
+function setSliderValue(percentage){
+    let betSize =null;
+    if (typeof percentage === 'number'){
+        betSize = Math.floor(playerChips * percentage/100);
+    } else {
+        betSize = getPlayerPotBet();
+    }
+
+    betSlider.value = betSize;
+    render();
+}
 
 
 newGameButton.addEventListener('click', startGame);
 betSlider.addEventListener('change', render);
+betSlider.addEventListener('input', render);
+betPotButton.addEventListener('click', () => setSliderValue());
+bet25Button.addEventListener('click', () => setSliderValue(25));
+bet50Button.addEventListener('click', () => setSliderValue(50));
+
 betButton.addEventListener('click', bet);
 initialize();
 render();
