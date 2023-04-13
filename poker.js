@@ -3,6 +3,7 @@ const potContainer = document.querySelector('.js-pot-container');
 
 const playerCardsContainer = document.querySelector('.js-player-cards-container');
 const playerChipContainer = document.querySelector('.js-player-chip-container');
+const playerStatusContainer= document.querySelector('.js-player-status-container');
 const betArea = document.querySelector('.js-bet-area');
 const betSlider = document.querySelector('#bet-amount');
 const betSliderValue = document.querySelector ('.js-slider-value');
@@ -14,6 +15,7 @@ const bet50Button = document.querySelector(".js-bet50");
 
 const computerCardsContainer = document.querySelector('.js-computer-cards-container');
 const computerChipContainer = document.querySelector('.js-computer-chip-container');
+const computerStatusContainer= document.querySelector('.js-computer-status-container');
 const computerActionContainer= document.querySelector('.js-computer-action');
 const communityCardsContainer= document.querySelector('.js-community-cards');
 
@@ -26,8 +28,10 @@ let {
     computerAction,     //játékos cselekedete (call, fold)
     playerChips,        //játékos zsetonjai
     playerBets,         //játékos licitje ebben a körben
+    playerStatus,       //játékos státuszinformációja (győzött vesztett, döntetlen, bedobta)
     computerChips,      //gép zsetonjai
-    computerBets,       // gép licitje ebben a körben
+    computerBets,       //gép licitje ebben a körben
+    computerStatus,     //számítógép státuszinformációja
     playerBetPlaced,    //játékos már licitált
     pot                 //kassza
 } = getInitialState();
@@ -42,12 +46,28 @@ function getInitialState(){
         computerAction: null,
         playerChips : 100,
         playerBets: 0,
+        playerStatus:"",
         computerChips : 100,
         computerBets:0,
+        computerStatus: "",
         playerBetPlaced:false,
         pot : 0
     }
 }
+
+//Állapotmenedzsment TODO: új leosztás indításánál ezeket az értékeket érdemes
+//frissíteni
+//deckId=null;
+//playerBets= 0;
+//computerBets=0;
+//playerCards = [];
+//computerCards=[];
+//computerAction=null;
+//playerBetPlaced=false;
+//playerStatus = "",
+//computerStatus = "";
+//computerAction = "";
+// Gyakorlatilag mindent resetelünk, kivéve a zsetonállást.
 
 function initialize (){
     ({
@@ -58,8 +78,10 @@ function initialize (){
         computerAction,
         playerChips,
         playerBets,
+        playerStatus,
         computerChips,
         computerBets,
+        computerStatus,
         playerBetPlaced,
         pot} = getInitialState());
         // A bet slider állapota csak a DOM-ban van rögzítve Hozzuk alapértelmezésbe.
@@ -115,12 +137,18 @@ function renderAction(){
     computerActionContainer.innerHTML=computerAction ?? "";
 }
 
+function renderStatusInfo(){
+    playerStatusContainer.innerHTML=playerStatus;
+    computerStatusContainer.innerHTML=computerStatus;
+}
+
 function render(){
     renderAllCards();
     renderChips();
     renderPot();
     renderSlider();
     renderAction();
+    renderStatusInfo();
 }
 
 async function drawPlayerCards(){
@@ -159,24 +187,18 @@ function endHand(winner=null){
             if (computerAction === ACTIONS.Fold){
                 playerChips+= pot;
                 pot=0;
-            } else  if (winner=== WINNER.Player){
+            } else  if (winner=== STATUS.Player){
                 playerChips+= pot;
                 pot=0;
-            }else if (winner === WINNER.Computer){
+            }else if (winner === STATUS.Computer){
                 computerChips+=pot;
                 pot=0;
-            } else if(winner === WINNER.Draw){
+            } else if(winner === STATUS.Draw){
                 playerChips+=playerBets;
                 computerChips+=computerBets;
                 pot=0;
             }
-            deckId=null;
-            playerBets= 0;
-            computerBets=0;
-            playerCards = [];
-            computerCards=[];
-            computerAction=null;
-            playerBetPlaced=false;
+           
             render();
 
         },2000);
@@ -208,11 +230,11 @@ async function getWinner(){
     const response = await data.json();
     const winners = response.winners;
     if( winners.length === 2){
-        return WINNER.Draw;
+        return STATUS.Draw;
     } else if (winners [0].cards === pc0){
-        return WINNER.Player;
+        return STATUS.Player;
     } else{
-        return WINNER.Computer;
+        return STATUS.Computer;
     }
 }
 
@@ -250,8 +272,18 @@ async function computerMoveAfterBet(){
         computerCards = response.cards;
         render();
         const winner= await showdown();
-       endHand(winner);
-    } else {
+        if (winner=== STATUS.Player){
+           playerStatus=STATUS.Player;
+        } else if (winner === STATUS.Computer){
+           computerStatus = STATUS.Computer; 
+        } else if (winner === STATUS.Draw){
+            playerStatus = STATUS.Draw;
+            computerStatus = STATUS.Draw;
+        }
+        endHand(winner);
+    } else { // ComputerFolded
+        playerStatus = STATUS.Player;
+        
         render();
         endHand();
     }
