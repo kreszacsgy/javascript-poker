@@ -33,10 +33,12 @@ let {
     computerBets,       //gép licitje ebben a körben
     computerStatus,     //számítógép státuszinformációja
     playerBetPlaced,    //játékos már licitált
-    pot                 //kassza
     timeoutIds,         //setTimout ID lista
 } = getInitialState();
 
+function getPot() {
+    return playerBets + computerBets;
+}
 
 function getInitialState(){
     return {
@@ -52,7 +54,7 @@ function getInitialState(){
         computerBets:0,
         computerStatus: "",
         playerBetPlaced:false,
-        pot : 0
+        timeoutIds: [],
     }
 }
 
@@ -87,7 +89,6 @@ function initialize (){
         computerBets,
         computerStatus,
         playerBetPlaced,
-        pot,
         timeoutIds
     } = getInitialState());
         // A bet slider állapota csak a DOM-ban van rögzítve Hozzuk alapértelmezésbe.
@@ -135,7 +136,7 @@ function renderChips() {
 
 function renderPot(){
     potContainer.innerHTML = `
-        <div class="chip-count">Pot: ${pot}</div>`;
+        <div class="chip-count">Pot: ${getPot()}</div>`;
 }
 
 function renderAction(){
@@ -170,7 +171,6 @@ function postBlinds(){
     playerBets+=1;
     computerChips-=2;
     computerBets+=2;
-    pot+=3;
     render();
 }
 
@@ -190,21 +190,16 @@ function startGame() {
 
 function endHand(winner=null){
     const id = setTimeout(()=> {
-            if (computerAction === ACTIONS.Fold){
-                playerChips+= pot;
-                pot=0;
-            } else  if (winner=== STATUS.Player){
-                playerChips+= pot;
-                pot=0;
+            if (computerAction === ACTIONS.Fold || winner=== STATUS.Player){
+                playerChips+= getPot();
             }else if (winner === STATUS.Computer){
-                computerChips+=pot;
-                pot=0;
-            } else if(winner === STATUS.Draw){
+                computerChips+=getPot();
+            } else /*if(winner === STATUS.Draw)*/{
                 playerChips+=playerBets;
                 computerChips+=computerBets;
-                pot=0;
             }
-           
+            playerBets =  0;
+            computerBets=0;
             render();
 
     },2000);
@@ -257,7 +252,7 @@ async function showdown (){
 async function computerMoveAfterBet(){
     const data = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
     const response = await data.json();
-    if(pot === 4){
+    if(getPot() === 4){
         computerAction = ACTIONS.Check;
     }
     else if (shouldComputerCall(response.cards)) {
@@ -269,10 +264,15 @@ async function computerMoveAfterBet(){
     if(computerAction === ACTIONS.Call){
         computerAction='Call';
         computerCards = response.cards;
+        if(playerBets > computerChips + computerBets) {
+            let chipsToReturnToPlayer = playerBets - computerChips- computerBets;
+            playerBets -= chipsToReturnToPlayer;
+            playerChips += chipsToReturnToPlayer;
+        }
         const difference=playerBets-computerBets;
         computerChips -= difference;
         computerBets += difference;
-        pot+=difference;
+        
     }
 
     if(computerAction === ACTIONS.Check || computerAction == ACTIONS.Call){
@@ -299,7 +299,6 @@ async function computerMoveAfterBet(){
 
 function bet(){
     const betValue=Number(betSlider.value);
-    pot+= betValue;
     playerChips-=betValue;
     playerBetPlaced=true;
     playerBets+=betValue;
@@ -309,7 +308,7 @@ function bet(){
 
 function getPlayerPotBet(){
     let difference = computerBets - playerBets;
-    return Math.min(playerChips, pot + 2*difference);
+    return Math.min(playerChips, getPot() + 2*difference);
 }
 
 function setSliderValue(percentage){
