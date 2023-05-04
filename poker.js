@@ -175,10 +175,16 @@ async function drawPlayerCards(){
 }
 
 function postBlinds(){
+    if (computerChips === 1){
+        computerChips = 0;
+        computerBets = 1;
+    } else {
+        computerChips-=2;
+        computerBets+=2;
+    }
     playerChips-=1;
     playerBets+=1;
-    computerChips-=2;
-    computerBets+=2;
+    
     render();
 }
 
@@ -227,7 +233,9 @@ function endHand(winner=null){
 }
 
 function shouldComputerCall(computerCards){
-    if (computerCards.length !=2) return false;
+    if (computerCards.length !==2) return false; //extra védelem
+    if (computerChips === 0) return true; // számítógép all in van
+
     const card1Code= computerCards[0].code;
     const card2Code= computerCards[1].code;
     const card1Value=card1Code[0];
@@ -269,10 +277,19 @@ async function showdown (){
     return winner;
 }
 
+function returnExtraBetsFromPot(){
+    if(playerBets > computerChips + computerBets) {
+        let chipsToReturnToPlayer = playerBets - computerChips- computerBets;
+        playerBets -= chipsToReturnToPlayer;
+        playerChips += chipsToReturnToPlayer;
+    }
+}
+
 async function computerMoveAfterBet(){
     const data = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
     const response = await data.json();
-    if(getPot() === 4){
+    // A játékos csak egészített VAGY a számítógépnek nincs licitálásra felhasználható zsetonja
+    if(playerBets === 2  || computerChips === 0){
         computerAction = ACTIONS.Check;
     }
     else if (shouldComputerCall(response.cards)) {
@@ -281,14 +298,13 @@ async function computerMoveAfterBet(){
     else {
         computerAction = ACTIONS.Fold;
     }
+    if (computerAction === ACTIONS.Check || computerAction===ACTIONS.Call){
+        returnExtraBetsFromPot();
+    }
+
     if(computerAction === ACTIONS.Call){
         computerAction='Call';
         computerCards = response.cards;
-        if(playerBets > computerChips + computerBets) {
-            let chipsToReturnToPlayer = playerBets - computerChips- computerBets;
-            playerBets -= chipsToReturnToPlayer;
-            playerChips += chipsToReturnToPlayer;
-        }
         const difference=playerBets-computerBets;
         computerChips -= difference;
         computerBets += difference;
