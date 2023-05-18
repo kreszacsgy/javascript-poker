@@ -174,16 +174,26 @@ async function drawPlayerCards(){
     
 }
 
+function forcedShowdown(){
+    // játék állapota : játékos megtette a tétjét ( nem tud több tétet tenni)
+    playerBetPlaced = true;
+
+    computerMoveAfterBet();
+}
+
+
 function postBlinds(){
-    if (computerChips === 1){
-        computerChips = 0;
+    playerChips-=1;
+    playerBets+=1;
+    if (computerChips === 1 || playerChips === 0){
+        computerChips -= 1;
         computerBets = 1;
+        
     } else {
         computerChips-=2;
         computerBets+=2;
     }
-    playerChips-=1;
-    playerBets+=1;
+   
     
     render();
 }
@@ -196,6 +206,9 @@ async function startHand(){
     deckId=response.deck_id;
     await drawPlayerCards();
     render();
+    if (playerChips ===0 || (computerChips === 0 && playrBets === computerBets)){
+    forcedShowdown();
+    }
 }
 
 function startGame() {
@@ -289,7 +302,7 @@ async function computerMoveAfterBet(){
     const data = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=2`)
     const response = await data.json();
     // A játékos csak egészített VAGY a számítógépnek nincs licitálásra felhasználható zsetonja
-    if(playerBets === 2  || computerChips === 0){
+    if(playerBets <= 2  || computerChips === 0){
         computerAction = ACTIONS.Check;
     }
     else if (shouldComputerCall(response.cards)) {
