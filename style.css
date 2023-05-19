@@ -20,8 +20,8 @@ body {
 .invisible {display: none;}
 
 .main-area-container {
-  width: 85vw;
-  min-width:844px;
+  width: 90vw;
+  min-width:992px;
   margin: 2rem auto;
 }
 
@@ -53,9 +53,9 @@ body {
 }
 
 .pot-container, .cc-container{
-  width: calc(68vw + 2rem);
+  width: calc(72vw + 2rem);
   margin: 1rem auto;
-  min-width: 708px;
+  min-width: 825px;
 
 }
 
